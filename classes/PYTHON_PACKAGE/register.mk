@@ -16,7 +16,7 @@ LOCAL_MODULE_CLASS := PYTHON_PACKAGE
 LOCAL_MODULE_FILENAME := $(LOCAL_MODULE).done
 LOCAL_DONE_FILES += $(LOCAL_MODULE).done
 
-ifneq ("$(filter %$(LOCAL_PYTHONPKG_TYPE),distutils setuptools)","$(LOCAL_PYTHONPKG_TYPE)")
+ifneq ("$(filter %$(LOCAL_PYTHONPKG_TYPE),distutils setuptools wheel)","$(LOCAL_PYTHONPKG_TYPE)")
   $(error $(LOCAL_PATH): Invalid or missing LOCAL_PYTHONPKG_TYPE: '$(LOCAL_PYTHONPKG_TYPE)')
 endif
 

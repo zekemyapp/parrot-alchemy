@@ -11,18 +11,22 @@ ifeq ("$(TARGET_OS)-$(TARGET_OS_FLAVOUR)","$(HOST_OS)-native")
   # For native build, assume that a package has installed some links
   _python-pkg-python-bin = $(HOST_OUT_STAGING)/$(HOST_DEFAULT_BIN_DESTDIR)/python
   _python-pkg-python-final-bin = $(HOST_OUT_STAGING)/$(HOST_DEFAULT_BIN_DESTDIR)/python
+  _python-pkg-target-python-bin = $(TARGET_OUT_STAGING)/$(TARGET_DEFAULT_BIN_DESTDIR)/python
   _python-pkg-use-native-python := $(true)
 else ifneq ("$(call is-module-in-build-config,python3)","")
   _python-pkg-python-bin := $(HOST_OUT_STAGING)/$(HOST_DEFAULT_BIN_DESTDIR)/python3
-ifeq ("$(TARGET_OS_FLAVOUR)","native-chroot")
-  _python-pkg-python-final-bin = /usr/bin/python3
-else
-  _python-pkg-python-final-bin = $(HOST_OUT_STAGING)/$(HOST_DEFAULT_BIN_DESTDIR)/python3
-endif
+  ifeq ("$(TARGET_OS_FLAVOUR)","native-chroot")
+    _python-pkg-python-final-bin = /usr/bin/python3
+  else
+    _python-pkg-python-final-bin = $(HOST_OUT_STAGING)/$(HOST_DEFAULT_BIN_DESTDIR)/python3
+  endif
+  # TODO what target python should be used in this case?
+  _python-pkg-target-python-bin :=
   _python-pkg-use-native-python := $(false)
 else
   _python-pkg-python-bin :=
   _python-pkg-python-final-bin =
+  _python-pkg-target-python-bin :=
   _python-pkg-use-native-python :=
 endif
 
@@ -32,9 +36,17 @@ endif
 
 _module_msg := $(if $(_mode_host),Host )PythonPkg
 
-_module_def_cmd_build := _python-pkg-def-cmd-build
-_module_def_cmd_install := _python-pkg-def-cmd-install
-_module_def_cmd_clean := _python-pkg-def-cmd-clean
+# For wheel packages, use a different set of build scripts
+# since we do not need to build
+ifeq ("$(LOCAL_PYTHONPKG_TYPE)","wheel")
+  _module_def_cmd_build := _python-pkg-empty-cmd-build
+  _module_def_cmd_install := _python-pkg-wheel-cmd-install
+  _module_def_cmd_clean := _python-pkg-def-cmd-clean
+else
+  _module_def_cmd_build := _python-pkg-def-cmd-build
+  _module_def_cmd_install := _python-pkg-def-cmd-install
+  _module_def_cmd_clean := _python-pkg-def-cmd-clean
+endif
 
 # Determine environment and arguments for build/install
 ifneq ("$(_python-pkg-use-native-python)","")
@@ -138,9 +150,11 @@ include $(BUILD_SYSTEM)/classes/GENERIC/rules.mk
 _python-pkg-build-args += --build-base="$(_generic_obj_dir)"
 
 $(LOCAL_TARGETS): PRIVATE_PYTHON := $(_python-pkg-python-bin)
+$(LOCAL_TARGETS): PRIVATE_TARGET_PYTHON := $(_python-pkg-target-python-bin)
 $(LOCAL_TARGETS): PRIVATE_SETUP_PY := $(LOCAL_PYTHONPKG_SETUP_PY)
 $(LOCAL_TARGETS): PRIVATE_ENV := $(_python-pkg-env) $(LOCAL_PYTHONPKG_ENV)
 $(LOCAL_TARGETS): PRIVATE_BUILD_ARGS := $(_python-pkg-build-args) $(LOCAL_PYTHONPKG_BUILD_ARGS)
 $(LOCAL_TARGETS): PRIVATE_INSTALL_ARGS := $(_python-pkg-install-args) $(LOCAL_PYTHONPKG_INSTALL_ARGS)
 $(LOCAL_TARGETS): PRIVATE_NEED_PYTHONPATH := $(_python-pkg-need-pythonpath)
 $(LOCAL_TARGETS): PRIVATE_NEED_SYSCONFIGDATA := $(_python-pkg-need-sysconfigdata)
+$(LOCAL_TARGETS): PRIVATE_WHEEL := $(LOCAL_PYTHONPKG_ARCHIVE)

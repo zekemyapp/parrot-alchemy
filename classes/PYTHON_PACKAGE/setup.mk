@@ -75,6 +75,19 @@ define _python-pkg-def-cmd-build
 		$(PRIVATE_INSTALL_ARGS)
 endef
 
+# Only available for python wheels
+define _python-pkg-wheel-cmd-install
+	@if [ ! -e "$(PRIVATE_TARGET_PYTHON)" ]; then \
+		echo "Missing python binary: '$(PRIVATE_TARGET_PYTHON)'"; \
+		exit 1; \
+	fi
+	$(Q) cd $(dir $(PRIVATE_SRC_DIR)/$(PRIVATE_WHEEL)) && \
+		$(PRIVATE_TARGET_PYTHON) -m pip install $(notdir $(PRIVATE_WHEEL))
+endef
+
 # TODO: clean python packages
 define _python-pkg-def-cmd-clean
+endef
+
+define _python-pkg-empty-cmd-build
 endef
